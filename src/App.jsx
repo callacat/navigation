@@ -3,7 +3,10 @@ import './App.css'
 function App() {
   return (
     <>
-      <h1>Hello, Navigation Site!</h1>
+      {/* 添加 Tailwind 类 */}
+      <h1 className="text-3xl font-bold underline text-blue-600">
+        Hello, Navigation Site!
+      </h1>
     </>
   )
 }
