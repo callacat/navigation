@@ -11,7 +11,7 @@ const themeIcons = {
   system: { icon: '⚙️', text: '跟随系统' }, // 齿轮图标
 };
 
-// 函数：获取当前北京时间并格式化
+// 函数：获取当前北京时间（包含星期）并格式化
 const getBeijingTime = () => {
   const now = new Date();
   // 获取 UTC 时间（毫秒）
@@ -19,16 +19,22 @@ const getBeijingTime = () => {
   // 北京时间是 UTC+8
   const beijingTime = new Date(utc + (8 * 3600000));
 
-  // 格式化时间，例如：YYYY-MM-DD HH:mm:ss
+  // 格式化时间，例如：YYYY-MM-DD HH:mm:ss 星期X
   const year = beijingTime.getFullYear();
   const month = String(beijingTime.getMonth() + 1).padStart(2, '0'); // 月份从0开始
   const day = String(beijingTime.getDate()).padStart(2, '0');
   const hours = String(beijingTime.getHours()).padStart(2, '0');
   const minutes = String(beijingTime.getMinutes()).padStart(2, '0');
   const seconds = String(beijingTime.getSeconds()).padStart(2, '0');
+  const dayOfWeek = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][beijingTime.getDay()]; // 获取星期
 
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${dayOfWeek}`;
 };
+
+// *** 请替换为你的天气 API Key 和基础 URL ***
+// 推荐使用 OpenWeatherMap (https://openweathermap.org/)，注册获取 API Key
+const WEATHER_API_KEY = 'YOUR_WEATHER_API_KEY'; // <-- 替换为你的 API Key
+const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
 
 
 function App() {
@@ -47,6 +53,11 @@ function App() {
 
   // 定义时间状态
   const [currentTime, setCurrentTime] = useState(getBeijingTime());
+
+  // 定义天气状态
+  const [weather, setWeather] = useState(null);
+  const [weatherError, setWeatherError] = useState(null);
+  const [location, setLocation] = useState(null); // 用户位置信息
 
   // 使用 useEffect 来监听主题状态变化并更新 <html> 元素的类
   useEffect(() => {
@@ -97,6 +108,50 @@ function App() {
     return () => clearInterval(timerId);
   }, []); // 空依赖项数组表示只在组件挂载和卸载时运行
 
+  // 使用 useEffect 获取用户位置并获取天气
+  useEffect(() => {
+    if (!WEATHER_API_KEY || WEATHER_API_KEY === 'YOUR_WEATHER_API_KEY') {
+      setWeatherError("请在 App.jsx 中设置您的天气 API Key");
+      return;
+    }
+
+    // 尝试使用 Geolocation API 获取当前位置
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation({ latitude, longitude });
+
+          try {
+            // 使用经纬度获取天气信息
+            const response = await fetch(`${WEATHER_BASE_URL}?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric&lang=zh_cn`); // units=metric 获取摄氏度，lang=zh_cn 获取中文描述
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setWeather(data);
+            setWeatherError(null); // 清除之前的错误
+          } catch (error) {
+            console.error("获取天气失败:", error);
+            setWeather(null); // 清空天气数据
+            setWeatherError("获取天气失败，请稍后再试");
+          }
+        },
+        (error) => {
+          // Geolocation API 获取位置失败或被拒绝
+          console.error("获取位置失败:", error);
+          setWeather(null); // 清空天气数据
+          setWeatherError("无法获取您的位置信息，请授权或检查设置");
+          setLocation(null); // 清空位置信息
+        }
+      );
+    } else {
+      // 浏览器不支持 Geolocation API
+      setWeather(null); // 清空天气数据
+      setWeatherError("您的浏览器不支持获取位置信息");
+      setLocation(null); // 清空位置信息
+    }
+  }, []); // 空依赖项数组表示只在组件挂载时运行
 
   // 处理主题切换的函数：循环切换主题
   const handleThemeToggle = () => {
@@ -125,7 +180,7 @@ function App() {
 
         {/* GitHub 链接，请替换为你的 GitHub 仓库地址 */}
         <a
-          href="https://github.com/callacat/navigation" // *** 请将 YOUR_GITHUB_REPO_URL 替换为你的 GitHub 仓库地址 ***
+          href="YOUR_GITHUB_REPO_URL" // *** 请将 YOUR_GITHUB_REPO_URL 替换为你的 GitHub 仓库地址 ***
           target="_blank"
           rel="noopener noreferrer"
           className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg hover:text-blue-600 dark:hover:text-blue-400" // 添加样式使其成为圆形按钮
@@ -136,21 +191,29 @@ function App() {
       </div>
 
       {/* 页面主要内容，垂直居中 */}
-      {/* 添加时间显示区域 */}
-      <div className="mt-12 text-xl font-mono text-gray-800 dark:text-gray-200"> {/* mt-12 为顶部留出空间 */}
-        {currentTime}
+      {/* 添加时间与天气显示区域 */}
+      <div className="mt-12 text-center"> {/* mt-12 为顶部留出空间，text-center 使内容居中 */}
+        {/* 时间显示 */}
+        <div className="text-xl font-mono text-gray-800 dark:text-gray-200">
+          {currentTime}
+        </div>
+
+        {/* 天气显示 */}
+        <div className="mt-2 text-lg text-gray-700 dark:text-gray-300">
+          {weatherError ? (
+            <p>{weatherError}</p>
+          ) : weather ? (
+            <p>{weather.name}: {weather.main.temp}°C, {weather.weather[0].description}</p>
+          ) : (
+            <p>正在获取天气...</p>
+          )}
+        </div>
       </div>
 
 
-      <div className="flex flex-col items-center mt-8"> {/* 添加 mt-8 在时间下方留出空间 */}
+      <div className="flex flex-col items-center mt-8"> {/* 添加 mt-8 在时间天气下方留出空间 */}
          {/* 后续其他组件和内容将放在这里 */}
-         {/* 例如：天气、搜索框、分区等 */}
-         {/* 移除原有的 h1 标签，或者将其移动到这里作为页面标题 */}
-         {/*
-         <h1 className="text-3xl font-bold underline text-blue-600 dark:text-blue-400">
-           Hello, Navigation Site!
-         </h1>
-         */}
+         {/* 例如：搜索框、分区等 */}
       </div>
 
     </div>
