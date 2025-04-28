@@ -4,6 +4,13 @@ import './App.css'; // 保留原有的 App.css 引入
 // 定义主题模式的顺序
 const themes = ['light', 'dark', 'system'];
 
+// 定义主题对应的图标和文本
+const themeIcons = {
+  light: { icon: '☀️', text: '浅色模式' }, // 太阳图标
+  dark: { icon: '🌙', text: '深色模式' },  // 月亮图标
+  system: { icon: '⚙️', text: '跟随系统' }, // 齿轮图标
+};
+
 function App() {
   // 定义主题状态，初始值从 localStorage 读取或默认为 'system'
   const [theme, setTheme] = useState(() => {
@@ -64,8 +71,8 @@ function App() {
     setTheme(themes[nextIndex]);
   };
 
-  // 根据当前主题显示对应的文本或图标（这里先用文本表示）
-  const themeButtonText = theme === 'light' ? '浅' : (theme === 'dark' ? '深' : '系'); // 浅色/深色/系统
+  // 获取当前主题对应的图标和文本
+  const currentThemeInfo = themeIcons[theme];
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
@@ -75,22 +82,22 @@ function App() {
       <div className="absolute top-4 right-4 flex items-center space-x-4">
         {/* 主题切换按钮 */}
         <button
-          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-sm font-bold"
+          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg" // 调整文本大小以适应图标
           onClick={handleThemeToggle}
-          title={`当前主题: ${theme === 'light' ? '浅色' : (theme === 'dark' ? '深色' : '跟随系统')}`}
+          title={`当前主题: ${currentThemeInfo.text}`}
         >
-          {themeButtonText} {/* 这里未来可以用图标替代 */}
+          {currentThemeInfo.icon} {/* 使用图标 */}
         </button>
 
         {/* GitHub 链接，请替换为你的 GitHub 仓库地址 */}
         <a
-          href="YOUR_GITHUB_REPO_URL" // *** 请将 YOUR_GITHUB_REPO_URL 替换为你的 GitHub 仓库地址 ***
+          href="https://github.com/callacat/navigation" // *** 请将 YOUR_GITHUB_REPO_URL 替换为你的 GitHub 仓库地址 ***
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg hover:text-blue-600 dark:hover:text-blue-400" // 添加样式使其成为圆形按钮
           title="访问我的 GitHub 仓库"
         >
-          GitHub {/* 这里未来可以用图标替代 */}
+          🐙 {/* 使用 Octocat 图标 */}
         </a>
       </div>
 
