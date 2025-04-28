@@ -11,6 +11,26 @@ const themeIcons = {
   system: { icon: '⚙️', text: '跟随系统' }, // 齿轮图标
 };
 
+// 函数：获取当前北京时间并格式化
+const getBeijingTime = () => {
+  const now = new Date();
+  // 获取 UTC 时间（毫秒）
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  // 北京时间是 UTC+8
+  const beijingTime = new Date(utc + (8 * 3600000));
+
+  // 格式化时间，例如：YYYY-MM-DD HH:mm:ss
+  const year = beijingTime.getFullYear();
+  const month = String(beijingTime.getMonth() + 1).padStart(2, '0'); // 月份从0开始
+  const day = String(beijingTime.getDate()).padStart(2, '0');
+  const hours = String(beijingTime.getHours()).padStart(2, '0');
+  const minutes = String(beijingTime.getMinutes()).padStart(2, '0');
+  const seconds = String(beijingTime.getSeconds()).padStart(2, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+
 function App() {
   // 定义主题状态，初始值从 localStorage 读取或默认为 'system'
   const [theme, setTheme] = useState(() => {
@@ -24,6 +44,9 @@ function App() {
     }
     return 'light';
   });
+
+  // 定义时间状态
+  const [currentTime, setCurrentTime] = useState(getBeijingTime());
 
   // 使用 useEffect 来监听主题状态变化并更新 <html> 元素的类
   useEffect(() => {
@@ -64,6 +87,17 @@ function App() {
 
   }, [theme]); // 依赖项为 theme 状态，只有当 theme 变化时才重新运行 effect
 
+  // 使用 useEffect 设置定时器，每秒更新时间
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setCurrentTime(getBeijingTime());
+    }, 1000); // 每 1000 毫秒 (1秒) 更新一次
+
+    // 清理函数：组件卸载时清除定时器
+    return () => clearInterval(timerId);
+  }, []); // 空依赖项数组表示只在组件挂载和卸载时运行
+
+
   // 处理主题切换的函数：循环切换主题
   const handleThemeToggle = () => {
     const currentIndex = themes.indexOf(theme);
@@ -76,10 +110,10 @@ function App() {
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative flex flex-col items-center p-4"> {/* 移除 justify-center，让内容从顶部开始排列 */}
 
       {/* 右上角区域 */}
-      <div className="absolute top-4 right-4 flex items-center space-x-4">
+      <div className="absolute top-4 right-4 flex items-center space-x-4 z-10"> {/* 添加 z-10 确保在顶部 */}
         {/* 主题切换按钮 */}
         <button
           className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg" // 调整文本大小以适应图标
@@ -102,13 +136,21 @@ function App() {
       </div>
 
       {/* 页面主要内容，垂直居中 */}
-      <div className="flex flex-col items-center">
-        <h1 className="text-3xl font-bold underline text-blue-600 dark:text-blue-400">
-          Hello, Navigation Site!
-        </h1>
+      {/* 添加时间显示区域 */}
+      <div className="mt-12 text-xl font-mono text-gray-800 dark:text-gray-200"> {/* mt-12 为顶部留出空间 */}
+        {currentTime}
+      </div>
 
-        {/* 后续其他组件和内容将放在这里 */}
-        {/* 例如：时间、天气、搜索框、分区等 */}
+
+      <div className="flex flex-col items-center mt-8"> {/* 添加 mt-8 在时间下方留出空间 */}
+         {/* 后续其他组件和内容将放在这里 */}
+         {/* 例如：天气、搜索框、分区等 */}
+         {/* 移除原有的 h1 标签，或者将其移动到这里作为页面标题 */}
+         {/*
+         <h1 className="text-3xl font-bold underline text-blue-600 dark:text-blue-400">
+           Hello, Navigation Site!
+         </h1>
+         */}
       </div>
 
     </div>
