@@ -49,9 +49,14 @@ const defaultSearchEngines = [
   // 可以根据需要添加更多搜索引擎
 ];
 
+// *** 背景图片 API 配置 (使用 Bing 每日一图) ***
+// Bing 每日一图 API URL
+const BING_DAILY_IMAGE_API_URL = 'https://www.bing.com/HPImageArchive.aspx?format=json&idx=0&n=1&mkt=zh-CN';
+// idx=0 表示获取当天的图片，n=1 表示获取一张图片，mkt=zh-CN 表示中国区
+
 
 function App() {
-  // ... (主题和时间相关的状态和 useEffect 保持不变) ...
+  // ... (主题、时间和天气相关的状态和 useEffect 保持不变) ...
   // 定义主题状态，初始值从 localStorage 读取或默认为 'system'
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -72,6 +77,10 @@ function App() {
   const [weather, setWeather] = useState(null);
   const [weatherError, setWeatherError] = useState(null);
   const [locationInfo, setLocationInfo] = useState(null); // 用户位置信息 (城市名等)
+
+  // --- 背景图片相关的状态 ---
+  const [backgroundImage, setBackgroundImage] = useState(null);
+  const [backgroundImageError, setBackgroundImageError] = useState(null);
 
 
   // 使用 useEffect 来监听主题状态变化并更新 <html> 元素的类
@@ -142,115 +151,124 @@ function App() {
         async (position) => {
           const { latitude, longitude } = position.coords;
           // 和风天气实时天气接口使用经纬度作为 location 参数，格式为 经度,纬度
-          const locationCoord = `${longitude},${latitude}`; // **修改这里，使用经度,纬度**
+          const locationCoord = `${longitude},${latitude}`;
 
           try {
             // 调用和风天气 API 获取天气信息
             // 使用 Headers 将 API Key 放在 Authorization: Bearer 头部
-            const response = await fetch(`${WEATHER_BASE_URL}?location=${locationCoord}&lang=zh`, { // **移除 ?key=... 参数**
-              headers: { // **添加 Headers**
-                'Authorization': `Bearer ${WEATHER_API_KEY}` // **使用 Authorization: Bearer 头部**
+            const response = await fetch(`${WEATHER_BASE_URL}?location=${locationCoord}&lang=zh`, {
+              headers: {
+                'Authorization': `Bearer ${WEATHER_API_KEY}`
               }
             });
             if (!response.ok) {
-               // 尝试解析错误信息
                const errorData = await response.json();
                throw new Error(`HTTP error! status: ${response.status}, code: ${errorData.code}, msg: ${errorData.msg}`);
             }
             const data = await response.json();
 
-            // 检查 API 返回的状态码
             if (data.code === '200') {
-                setWeather(data.now); // 实时天气数据通常在 'now'字段
-                // 获取位置信息 (可能在 data.location 字段，取决于你使用的接口和参数)
-                setLocationInfo(data.location ? data.location[0] : null); // 假设位置信息在 data.location 数组的第一个元素
-
-                setWeatherError(null); // 清除之前的错误
+                setWeather(data.now);
+                setLocationInfo(data.location ? data.location[0] : null);
+                setWeatherError(null);
             } else {
-                // API 返回错误码
-                setWeather(null); // 清空天气数据
+                setWeather(null);
                 setWeatherError(`天气数据获取失败: ${data.code} - ${data.msg || '未知错误'}`);
             }
 
           } catch (error) {
             console.error("获取天气失败:", error);
-            setWeather(null); // 清空天气数据
+            setWeather(null);
             setWeatherError(`获取天气失败，请稍后再试。错误信息: ${error.message}`);
           }
         },
         (error) => {
-          // Geolocation API 获取位置失败或被拒绝
           console.error("获取位置失败:", error);
-          setWeather(null); // 清空天气数据
+          setWeather(null);
           setWeatherError("无法获取您的位置信息，请授权或检查设置");
-          setLocationInfo(null); // 清空位置信息
+          setLocationInfo(null);
         }
       );
     } else {
-      // 浏览器不支持 Geolocation API
-      setWeather(null); // 清空天气数据
+      setWeather(null);
       setWeatherError("您的浏览器不支持获取位置信息");
-      setLocationInfo(null); // 清空位置信息
+      setLocationInfo(null);
     }
 
-    // 注意：和风天气免费版可能有调用频率限制，不适合频繁更新。
-    // 如果需要更频繁更新或通过城市名获取，请参考和风天气开发文档。
+  }, []); // 空依赖项数组表示只在组件挂载时运行
+
+  // --- 使用 useEffect 获取背景图片 (使用 Bing 每日一图) ---
+  useEffect(() => {
+    const fetchBackgroundImage = async () => {
+      try {
+        // 调用 Bing 每日一图 API 获取图片信息
+        const response = await fetch(BING_DAILY_IMAGE_API_URL);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        // Bing API 返回的图片 URL 在 images 数组的第一个元素的 url 字段
+        // 需要拼接 Bing 的域名
+        if (data && data.images && data.images.length > 0 && data.images[0].url) {
+          const imageUrl = `https://www.bing.com${data.images[0].url}`; // 拼接完整 URL
+          setBackgroundImage(imageUrl);
+          setBackgroundImageError(null); // 清除之前的错误
+        } else {
+          setBackgroundImage(null);
+          setBackgroundImageError("未获取到背景图片 URL");
+        }
+
+      } catch (error) {
+        console.error("获取背景图片失败:", error);
+        setBackgroundImage(null);
+        setBackgroundImageError(`获取背景图片失败，请稍后再试。错误信息: ${error.message}`);
+      }
+    };
+
+    fetchBackgroundImage(); // 组件挂载时立即获取一次背景图片
+
+    // Bing 每日一图每天只更新一次，通常不需要定时更换
 
   }, []); // 空依赖项数组表示只在组件挂载时运行
 
   // ... (主题切换函数保持不变) ...
-  // 处理主题切换的函数：循环切换主题
   const handleThemeToggle = () => {
     const currentIndex = themes.indexOf(theme);
     const nextIndex = (currentIndex + 1) % themes.length;
     setTheme(themes[nextIndex]);
   };
 
-  // 获取当前主题对应的图标和文本
   const currentThemeInfo = themeIcons[theme];
-
-  // --- 搜索区相关的状态和函数 ---
-  const [searchQuery, setSearchQuery] = useState(''); // 搜索输入框的状态
-  const [selectedEngine, setSelectedEngine] = useState(defaultSearchEngines[0]); // 当前选中的搜索引擎
-
-  // 处理搜索输入的函数
-  const handleSearchInputChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  // 处理搜索引擎选择变化的函数
-  const handleEngineChange = (event) => {
-    const selectedEngineName = event.target.value;
-    const engine = defaultSearchEngines.find(engine => engine.name === selectedEngineName);
-    if (engine) {
-      setSelectedEngine(engine);
-    }
-  };
-
-  // 执行搜索的函数
-  const handleSearch = (event) => {
-    event.preventDefault(); // 阻止表单默认提交行为
-    if (searchQuery.trim()) {
-      const searchUrl = `${selectedEngine.url}${encodeURIComponent(searchQuery)}`;
-      window.open(searchUrl, '_blank'); // 在新标签页打开搜索结果
-    }
-  };
-  // --- 搜索区相关的状态和函数结束 ---
 
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative flex flex-col items-center p-4"> {/* 移除 justify-center，让内容从顶部开始排列 */}
+    // 添加背景图片样式
+    <div
+      className="min-h-screen relative flex flex-col items-center p-4"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      {/* 背景叠加层，用于在深色模式下提高前景内容的对比度 */}
+      {/* 叠加层颜色和透明度可以根据背景图片调整，这里使用示例值 */}
+      <div className="absolute inset-0 bg-black opacity-30 dark:bg-black dark:opacity-60 z-0"></div> {/* 调整叠加层颜色和透明度 */}
 
-      {/* 右上角区域 */}
-      <div className="absolute top-4 right-4 flex items-center space-x-4 z-10"> {/* 添加 z-10 确保在顶部 */}
+
+      {/* 右上角区域，确保在叠加层上方 */}
+      <div className="absolute top-4 right-4 flex items-center space-x-4 z-10">
         {/* 主题切换按钮 */}
         <button
-          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg" // 调整文本大小以适应图标
+          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg"
           onClick={handleThemeToggle}
           title={`当前主题: ${currentThemeInfo.text}`}
         >
-          {currentThemeInfo.icon} {/* 使用图标 */}
+          {currentThemeInfo.icon}
         </button>
 
         {/* GitHub 链接，请替换为你的 GitHub 仓库地址 */}
@@ -258,80 +276,82 @@ function App() {
           href="YOUR_GITHUB_REPO_URL" // *** 请将 YOUR_GITHUB_REPO_URL 替换为你的 GitHub 仓库地址 ***
           target="_blank"
           rel="noopener noreferrer"
-          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg hover:text-blue-600 dark:hover:text-blue-400" // 添加样式使其成为圆形按钮
+          className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg hover:text-blue-600 dark:hover:text-blue-400"
           title="访问我的 GitHub 仓库"
         >
-          🐙 {/* 使用 Octocat 图标 */}
+          🐙
         </a>
       </div>
 
-      {/* 页面主要内容，垂直居中 */}
-      {/* 添加时间与天气显示区域 */}
-      <div className="mt-12 text-center"> {/* mt-12 为顶部留出空间，text-center 使内容居中 */}
-        {/* 时间显示 */}
-        <div className="text-xl font-mono text-gray-800 dark:text-gray-200">
-          {currentTime}
+      {/* 页面主要内容，确保在叠加层上方 */}
+      <div className="relative z-10 flex flex-col items-center w-full"> {/* 添加 relative 和 z-10 */}
+        {/* 添加时间与天气显示区域 */}
+        <div className="mt-12 text-center text-gray-900 dark:text-gray-100"> {/* 调整文本颜色以适应背景 */}
+          {/* 时间显示 */}
+          <div className="text-xl font-mono">
+            {currentTime}
+          </div>
+
+          {/* 天气显示 */}
+          <div className="mt-2 text-lg">
+            {weatherError ? (
+              <p>{weatherError}</p>
+            ) : weather ? (
+              <p>
+                {locationInfo?.name ? `${locationInfo.name}: ` : '您的位置: '}
+                {weather.temp}°C, {weather.text}
+              </p>
+            ) : (
+              <p>正在获取天气...</p>
+            )}
+          </div>
         </div>
 
-        {/* 天气显示 */}
-        <div className="mt-2 text-lg text-gray-700 dark:text-gray-300">
-          {weatherError ? (
-            <p>{weatherError}</p>
-          ) : weather ? (
-            <p>
-              {/* 显示城市名（如果获取到）和天气信息 */}
-              {locationInfo?.name ? `${locationInfo.name}: ` : '您的位置: '}
-              {weather.temp}°C, {weather.text} {/* 假设实时天气温度在 temp 字段，描述在 text 字段 */}
-            </p>
-          ) : (
-            <p>正在获取天气...</p>
-          )}
+        {/* --- 搜索区 --- */}
+        <div className="mt-12 w-full max-w-md">
+          <form onSubmit={handleSearch} className="flex items-center rounded-full shadow-md overflow-hidden bg-white dark:bg-gray-800">
+            {/* 搜索引擎选择 */}
+            <select
+              value={selectedEngine.name}
+              onChange={handleEngineChange}
+              className="px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 border-none focus:outline-none"
+            >
+              {defaultSearchEngines.map(engine => (
+                <option key={engine.name} value={engine.name}>
+                  {engine.name}
+                </option>
+              ))}
+            </select>
+
+            {/* 搜索输入框 */}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchInputChange}
+              placeholder="输入搜索内容..."
+              className="flex-grow px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 border-none focus:outline-none"
+            />
+
+            {/* 搜索按钮 */}
+            <button
+              type="submit"
+              className="px-6 py-3 bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100 hover:bg-blue-600 dark:hover:bg-blue-800 focus:outline-none"
+            >
+              搜索
+            </button>
+          </form>
         </div>
-      </div>
-
-      {/* --- 搜索区 --- */}
-      <div className="mt-12 w-full max-w-md"> {/* mt-12 在时间天气下方留出空间，max-w-md 限制最大宽度 */}
-        <form onSubmit={handleSearch} className="flex items-center rounded-full shadow-md overflow-hidden bg-white dark:bg-gray-800">
-          {/* 搜索引擎选择 */}
-          <select
-            value={selectedEngine.name}
-            onChange={handleEngineChange}
-            className="px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 border-none focus:outline-none"
-          >
-            {defaultSearchEngines.map(engine => (
-              <option key={engine.name} value={engine.name}>
-                {engine.name}
-              </option>
-            ))}
-          </select>
-
-          {/* 搜索输入框 */}
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={handleSearchInputChange}
-            placeholder="输入搜索内容..."
-            className="flex-grow px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 border-none focus:outline-none"
-          />
-
-          {/* 搜索按钮 */}
-          <button
-            type="submit"
-            className="px-6 py-3 bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100 hover:bg-blue-600 dark:hover:bg-blue-800 focus:outline-none"
-          >
-            搜索
-          </button>
-        </form>
-      </div>
-      {/* --- 搜索区结束 --- */}
+        {/* --- 搜索区结束 --- */}
 
 
-      <div className="flex flex-col items-center mt-8"> {/* 添加 mt-8 在搜索区下方留出空间 */}
-         {/* 后续其他组件和内容将放在这里 */}
-         {/* 例如：分区和卡片 */}
-      </div>
+        <div className="flex flex-col items-center mt-8">
+           {/* 后续其他组件和内容将放在这里 */}
+           {/* 例如：分区和卡片 */}
+        </div>
 
-    </div>
+      </div> {/* 页面主要内容容器结束 */}
+
+    </div> // 主容器结束
   );
 }
 
