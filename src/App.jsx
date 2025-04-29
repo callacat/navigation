@@ -410,20 +410,20 @@ function App() {
         {/* --- 分区和卡片区域 --- */}
         <div className="mt-8 w-full max-w-4xl"> {/* 调整最大宽度以适应多个分区 */}
           {sections.map(section => (
-            <div key={section.id} className="mb-8"> {/* 每个分区一个容器 */}
+            <div key={section.id} className="mb-8 p-6 rounded-lg shadow-xl bg-white dark:bg-gray-800"> {/* 为分区容器添加样式 */}
               {/* 分区标题 */}
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{section.name}</h2>
+              <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">{section.name}</h2> {/* 为标题添加下划线和底部间距 */}
 
               {/* 卡片容器 */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"> {/* 使用 grid 布局卡片 */}
                 {section.cards.map(card => (
                   <button
                     key={card.id}
-                    className="flex flex-col items-center p-4 rounded-lg shadow-md bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow duration-200"
+                    className="flex flex-col items-center p-4 rounded-lg shadow-md bg-gray-200 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" // 改进卡片样式和交互效果
                     onClick={() => handleCardClick(card.url)}
                   >
                     {/* 卡片图标或首字母 */}
-                    <div className="w-10 h-10 mb-2 flex items-center justify-center bg-blue-500 dark:bg-blue-700 text-white dark:text-gray-100 rounded-full text-xl font-bold">
+                    <div className="w-10 h-10 mb-2 flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white rounded-full text-xl font-bold overflow-hidden"> {/* 调整图标背景色和溢出隐藏 */}
                       {/* 这里将实现图标获取逻辑，暂时使用首字母 */}
                       {card.icon ? (
                         <img src={card.icon} alt={card.name} className="w-full h-full object-cover rounded-full" />
@@ -432,7 +432,7 @@ function App() {
                       )}
                     </div>
                     {/* 卡片名称 */}
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 text-center">{card.name}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 添加 truncate 避免名称过长溢出 */}
                   </button>
                 ))}
               </div>
