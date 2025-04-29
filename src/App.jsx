@@ -36,10 +36,22 @@ const getBeijingTime = () => {
 const WEATHER_API_KEY = 'YOUR_HEFENG_API_KEY'; // <-- 在这里填写你的 API Key
 
 // 和风天气 V7 实时天气 API 基础 URL
-const WEATHER_BASE_URL = 'https://n463ytfng8.re.qweatherapi.com/v7/weather/now';
+const WEATHER_BASE_URL = 'https://devapi.qweather.com/v7/weather/now';
+
+// 定义默认搜索引擎配置
+const defaultSearchEngines = [
+  { name: 'Google', url: 'https://www.google.com/search?q=' },
+  { name: 'Bing', url: 'https://www.bing.com/search?q=' },
+  { name: '秘塔AI搜索', url: 'https://metaso.cn/search?q=' },
+  { name: '知乎', url: 'https://www.zhihu.com/search?q=' },
+  { name: 'Bilibili', url: 'https://search.bilibili.com/all?keyword=' },
+  { name: '在线翻译', url: 'https://fanyi.baidu.com/#en/zh/' }, // 示例：百度翻译，可能需要调整URL格式
+  // 可以根据需要添加更多搜索引擎
+];
 
 
 function App() {
+  // ... (主题和时间相关的状态和 useEffect 保持不变) ...
   // 定义主题状态，初始值从 localStorage 读取或默认为 'system'
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -119,7 +131,7 @@ function App() {
   // 使用 useEffect 获取用户位置并获取天气
   useEffect(() => {
     // 检查 API Key 是否已设置（是否还是默认的占位符）
-    if (!WEATHER_API_KEY || WEATHER_API_KEY === '67f801c1d2c841659d1d549214588518') {
+    if (!WEATHER_API_KEY || WEATHER_API_KEY === 'YOUR_HEFENG_API_KEY') {
       setWeatherError("请在 src/App.jsx 文件中设置您的天气 API Key"); // <-- 更新提示信息
       return;
     }
@@ -149,10 +161,8 @@ function App() {
 
             // 检查 API 返回的状态码
             if (data.code === '200') {
-                setWeather(data.now); // 实时天气数据通常在 'now' 字段
+                setWeather(data.now); // 实时天气数据通常在 'now'字段
                 // 获取位置信息 (可能在 data.location 字段，取决于你使用的接口和参数)
-                // 注意：实时天气接口本身可能不返回详细位置信息，可能需要调用另外的地理/位置查找接口
-                // 这里先尝试从响应中获取城市名，如果API不返回，可以留空或显示经纬度
                 setLocationInfo(data.location ? data.location[0] : null); // 假设位置信息在 data.location 数组的第一个元素
 
                 setWeatherError(null); // 清除之前的错误
@@ -188,6 +198,7 @@ function App() {
 
   }, []); // 空依赖项数组表示只在组件挂载时运行
 
+  // ... (主题切换函数保持不变) ...
   // 处理主题切换的函数：循环切换主题
   const handleThemeToggle = () => {
     const currentIndex = themes.indexOf(theme);
@@ -197,6 +208,35 @@ function App() {
 
   // 获取当前主题对应的图标和文本
   const currentThemeInfo = themeIcons[theme];
+
+  // --- 搜索区相关的状态和函数 ---
+  const [searchQuery, setSearchQuery] = useState(''); // 搜索输入框的状态
+  const [selectedEngine, setSelectedEngine] = useState(defaultSearchEngines[0]); // 当前选中的搜索引擎
+
+  // 处理搜索输入的函数
+  const handleSearchInputChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  // 处理搜索引擎选择变化的函数
+  const handleEngineChange = (event) => {
+    const selectedEngineName = event.target.value;
+    const engine = defaultSearchEngines.find(engine => engine.name === selectedEngineName);
+    if (engine) {
+      setSelectedEngine(engine);
+    }
+  };
+
+  // 执行搜索的函数
+  const handleSearch = (event) => {
+    event.preventDefault(); // 阻止表单默认提交行为
+    if (searchQuery.trim()) {
+      const searchUrl = `${selectedEngine.url}${encodeURIComponent(searchQuery)}`;
+      window.open(searchUrl, '_blank'); // 在新标签页打开搜索结果
+    }
+  };
+  // --- 搜索区相关的状态和函数结束 ---
+
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
@@ -249,10 +289,46 @@ function App() {
         </div>
       </div>
 
+      {/* --- 搜索区 --- */}
+      <div className="mt-12 w-full max-w-md"> {/* mt-12 在时间天气下方留出空间，max-w-md 限制最大宽度 */}
+        <form onSubmit={handleSearch} className="flex items-center rounded-full shadow-md overflow-hidden bg-white dark:bg-gray-800">
+          {/* 搜索引擎选择 */}
+          <select
+            value={selectedEngine.name}
+            onChange={handleEngineChange}
+            className="px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 border-none focus:outline-none"
+          >
+            {defaultSearchEngines.map(engine => (
+              <option key={engine.name} value={engine.name}>
+                {engine.name}
+              </option>
+            ))}
+          </select>
 
-      <div className="flex flex-col items-center mt-8"> {/* 添加 mt-8 在时间天气下方留出空间 */}
+          {/* 搜索输入框 */}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchInputChange}
+            placeholder="输入搜索内容..."
+            className="flex-grow px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 border-none focus:outline-none"
+          />
+
+          {/* 搜索按钮 */}
+          <button
+            type="submit"
+            className="px-6 py-3 bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100 hover:bg-blue-600 dark:hover:bg-blue-800 focus:outline-none"
+          >
+            搜索
+          </button>
+        </form>
+      </div>
+      {/* --- 搜索区结束 --- */}
+
+
+      <div className="flex flex-col items-center mt-8"> {/* 添加 mt-8 在搜索区下方留出空间 */}
          {/* 后续其他组件和内容将放在这里 */}
-         {/* 例如：搜索框、分区等 */}
+         {/* 例如：分区和卡片 */}
       </div>
 
     </div>
@@ -260,4 +336,3 @@ function App() {
 }
 
 export default App;
-
