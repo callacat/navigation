@@ -329,13 +329,17 @@ function App() {
           return { ...card, icon: faviconUrl };
         })
       }));
-      setSections(updatedSections);
+      // 使用 setTimeout 延迟设置状态，给浏览器一些时间渲染，可能有助于图标加载
+      // 注意：这只是一个尝试，不保证解决所有图标加载问题
+      setTimeout(() => {
+          setSections(updatedSections);
+      }, 100); // 延迟 100 毫秒
     };
 
     // 仅在 sections 状态初始化时运行一次此 effect
-    // 如果 sections 数据会动态变化并需要重新获取图标，需要调整依赖项
     // 检查 sections 是否是初始的 defaultSections 引用，避免重复获取
-    if (sections === defaultSections) {
+    // 使用 JSON.stringify 比较深层内容，更准确判断是否是初始数据
+    if (JSON.stringify(sections) === JSON.stringify(defaultSections)) {
        fetchFavicons();
     }
 
@@ -351,6 +355,8 @@ function App() {
   const handleImageError = (e) => {
     e.target.onerror = null; // 防止无限循环
     e.target.src = ''; // 清空 src，显示备用内容（首字母）
+    // 可以选择在这里设置一个默认的本地图标或者让父元素显示首字母
+    // 例如：e.target.parentElement.innerText = e.target.alt.charAt(0);
   };
 
 
@@ -462,20 +468,21 @@ function App() {
         {/* --- 分区和卡片区域 --- */}
         <div className="mt-8 w-full max-w-4xl"> {/* 调整最大宽度以适应多个分区 */}
           {sections.map(section => (
-            <div key={section.id} className="mb-8 p-6 rounded-lg shadow-xl bg-white dark:bg-gray-800"> {/* 为分区容器添加样式 */}
+            <div key={section.id} className="mb-8 p-4 rounded-lg shadow-xl bg-white dark:bg-gray-800"> {/* 为分区容器添加样式，减小内边距 */}
               {/* 分区标题 */}
-              <h2 className="text-2xl font-bold mb-6 pb-2 border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">{section.name}</h2> {/* 为标题添加下划线和底部间距 */}
+              <h2 className="text-xl font-bold mb-4 pb-2 border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">{section.name}</h2> {/* 减小标题大小和底部间距 */}
 
               {/* 卡片容器 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"> {/* 使用 grid 布局卡片 */}
+              {/* 调整 grid 列数，在小屏幕上显示更多 */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"> {/* 调整 grid 列数和间距 */}
                 {section.cards.map(card => (
                   <button
                     key={card.id}
-                    className="flex flex-col items-center p-4 rounded-lg shadow-md bg-gray-50 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" // 改进卡片背景样式
+                    className="flex flex-col items-center p-3 rounded-lg shadow-md bg-gray-50 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" // 改进卡片背景样式，减小内边距
                     onClick={() => handleCardClick(card.url)}
                   >
                     {/* 卡片图标或首字母 */}
-                    <div className="w-10 h-10 mb-2 flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white rounded-full text-xl font-bold overflow-hidden"> {/* 调整图标背景色和溢出隐藏 */}
+                    <div className="w-8 h-8 mb-1 flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white rounded-full text-lg font-bold overflow-hidden"> {/* 减小图标尺寸和底部间距 */}
                       {/* 根据 card.icon 是否存在来显示图标或首字母 */}
                       {card.icon ? (
                         // 使用定义的 handleImageError 函数
@@ -485,7 +492,7 @@ function App() {
                       )}
                     </div>
                     {/* 卡片名称 */}
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 添加 truncate 避免名称过长溢出 */}
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 减小文本大小 */}
                   </button>
                 ))}
               </div>
