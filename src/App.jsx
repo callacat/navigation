@@ -247,7 +247,7 @@ function App() {
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
     // 添加背景图片样式
     <div
-      className="min-h-screen relative flex flex-col items-center p-4"
+      className="min-h-screen relative flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-900" // **添加 fallback 背景颜色**
       style={{
         backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
         backgroundSize: 'cover',
@@ -261,7 +261,7 @@ function App() {
 
 
       {/* 右上角区域，确保在叠加层上方 */}
-      <div className="absolute top-4 right-4 flex items-center space-x-4 z-10">
+      <div className="absolute top-4 right-4 flex items-center space-x-4 z-20"> {/* **提高 z-index** */}
         {/* 主题切换按钮 */}
         <button
           className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg"
@@ -284,7 +284,11 @@ function App() {
       </div>
 
       {/* 页面主要内容，确保在叠加层上方 */}
-      <div className="relative z-10 flex flex-col items-center w-full"> {/* 添加 relative 和 z-10 */}
+      <div className="relative z-10 flex flex-col items-center w-full">
+         {/* **临时测试文本，用于确认内容区域是否渲染** */}
+         {/* <p className="text-white text-2xl z-30">测试文本，如果看到说明内容区域正常</p> */}
+
+
         {/* 添加时间与天气显示区域 */}
         <div className="mt-12 text-center text-gray-900 dark:text-gray-100"> {/* 调整文本颜色以适应背景 */}
           {/* 时间显示 */}
