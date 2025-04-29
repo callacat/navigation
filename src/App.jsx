@@ -49,9 +49,9 @@ const defaultSearchEngines = [
   // 可以根据需要添加更多搜索引擎
 ];
 
-// *** 背景图片 API 配置 (使用 Bing 每日一图) ***
+// *** 背景图片 API 配置 (使用 Bing 每日一图) - 暂时禁用 ***
 // Bing 每日一图 API URL
-const BING_DAILY_IMAGE_API_URL = 'https://www.bing.com/HPImageArchive.aspx?format=json&idx=0&n=1&mkt=zh-CN';
+// const BING_DAILY_IMAGE_API_URL = 'https://www.bing.com/HPImageArchive.aspx?format=json&idx=0&n=1&mkt=zh-CN';
 // idx=0 表示获取当天的图片，n=1 表示获取一张图片，mkt=zh-CN 表示中国区
 
 
@@ -78,9 +78,9 @@ function App() {
   const [weatherError, setWeatherError] = useState(null);
   const [locationInfo, setLocationInfo] = useState(null); // 用户位置信息 (城市名等)
 
-  // --- 背景图片相关的状态 ---
-  const [backgroundImage, setBackgroundImage] = useState(null);
-  const [backgroundImageError, setBackgroundImageError] = useState(null);
+  // --- 背景图片相关的状态 - 暂时禁用 ---
+  // const [backgroundImage, setBackgroundImage] = useState(null);
+  // const [backgroundImageError, setBackgroundImageError] = useState(null);
 
 
   // 使用 useEffect 来监听主题状态变化并更新 <html> 元素的类
@@ -197,41 +197,41 @@ function App() {
 
   }, []); // 空依赖项数组表示只在组件挂载时运行
 
-  // --- 使用 useEffect 获取背景图片 (使用 Bing 每日一图) ---
-  useEffect(() => {
-    const fetchBackgroundImage = async () => {
-      try {
-        // 调用 Bing 每日一图 API 获取图片信息
-        const response = await fetch(BING_DAILY_IMAGE_API_URL);
+  // --- 使用 useEffect 获取背景图片 (使用 Bing 每日一图) - 暂时禁用 ---
+  // useEffect(() => {
+  //   const fetchBackgroundImage = async () => {
+  //     try {
+  //       // 调用 Bing 每日一图 API 获取图片信息
+  //       const response = await fetch(BING_DAILY_IMAGE_API_URL);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+  //       if (!response.ok) {
+  //         throw new Error(`HTTP error! status: ${response.status}`);
+  //       }
 
-        const data = await response.json();
-        // Bing API 返回的图片 URL 在 images 数组的第一个元素的 url 字段
-        // 需要拼接 Bing 的域名
-        if (data && data.images && data.images.length > 0 && data.images[0].url) {
-          const imageUrl = `https://www.bing.com${data.images[0].url}`; // 拼接完整 URL
-          setBackgroundImage(imageUrl);
-          setBackgroundImageError(null); // 清除之前的错误
-        } else {
-          setBackgroundImage(null);
-          setBackgroundImageError("未获取到背景图片 URL");
-        }
+  //       const data = await response.json();
+  //       // Bing API 返回的图片 URL 在 images 数组的第一个元素的 url 字段
+  //       // 需要拼接 Bing 的域名
+  //       if (data && data.images && data.images.length > 0 && data.images[0].url) {
+  //         const imageUrl = `https://www.bing.com${data.images[0].url}`; // 拼接完整 URL
+  //         setBackgroundImage(imageUrl);
+  //         setBackgroundImageError(null); // 清除之前的错误
+  //       } else {
+  //         setBackgroundImage(null);
+  //         setBackgroundImageError("未获取到背景图片 URL");
+  //       }
 
-      } catch (error) {
-        console.error("获取背景图片失败:", error);
-        setBackgroundImage(null);
-        setBackgroundImageError(`获取背景图片失败，请稍后再试。错误信息: ${error.message}`);
-      }
-    };
+  //     } catch (error) {
+  //       console.error("获取背景图片失败:", error);
+  //       setBackgroundImage(null);
+  //       setBackgroundImageError(`获取背景图片失败，请稍后再试。错误信息: ${error.message}`);
+  //     }
+  //   };
 
-    fetchBackgroundImage(); // 组件挂载时立即获取一次背景图片
+  //   fetchBackgroundImage(); // 组件挂载时立即获取一次背景图片
 
-    // Bing 每日一图每天只更新一次，通常不需要定时更换
+  //   // Bing 每日一图每天只更新一次，通常不需要定时更换
 
-  }, []); // 空依赖项数组表示只在组件挂载时运行
+  // }, []); // 空依赖项数组表示只在组件挂载时运行
 
   // ... (主题切换函数保持不变) ...
   const handleThemeToggle = () => {
@@ -242,26 +242,53 @@ function App() {
 
   const currentThemeInfo = themeIcons[theme];
 
+  // --- 搜索区相关的状态和函数 ---
+  const [searchQuery, setSearchQuery] = useState(''); // 搜索输入框的状态
+  const [selectedEngine, setSelectedEngine] = useState(defaultSearchEngines[0]); // 当前选中的搜索引擎
+
+  // 处理搜索输入的函数
+  const handleSearchInputChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  // 处理搜索引擎选择变化的函数
+  const handleEngineChange = (event) => {
+    const selectedEngineName = event.target.value;
+    const engine = defaultSearchEngines.find(engine => engine.name === selectedEngineName);
+    if (engine) {
+      setSelectedEngine(engine);
+    }
+  };
+
+  // 执行搜索的函数
+  const handleSearch = (event) => {
+    event.preventDefault(); // 阻止表单默认提交行为
+    if (searchQuery.trim()) {
+      const searchUrl = `${selectedEngine.url}${encodeURIComponent(searchQuery)}`;
+      window.open(searchUrl, '_blank'); // 在新标签页打开搜索结果
+    }
+  };
+  // --- 搜索区相关的状态和函数结束 ---
+
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
-    // 添加背景图片样式
+    // 移除背景图片样式和叠加层
     <div
-      className="min-h-screen relative flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-900" // **添加 fallback 背景颜色**
-      style={{
-        backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
+      className="min-h-screen relative flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-900" // 保留 fallback 背景颜色
+      // style={{ // 移除 style 属性
+      //   backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+      //   backgroundSize: 'cover',
+      //   backgroundPosition: 'center',
+      //   backgroundRepeat: 'no-repeat',
+      // }}
     >
-      {/* 背景叠加层，用于在深色模式下提高前景内容的对比度 */}
-      {/* 叠加层颜色和透明度可以根据背景图片调整，这里使用示例值 */}
-      <div className="absolute inset-0 bg-black opacity-30 dark:bg-black dark:opacity-60 z-0"></div> {/* 调整叠加层颜色和透明度 */}
+      {/* 背景叠加层 - 移除或注释掉 */}
+      {/* <div className="absolute inset-0 bg-black opacity-30 dark:bg-black dark:opacity-60 z-0"></div> */}
 
 
-      {/* 右上角区域，确保在叠加层上方 */}
-      <div className="absolute top-4 right-4 flex items-center space-x-4 z-20"> {/* **提高 z-index** */}
+      {/* 右上角区域，确保在前景 */}
+      <div className="absolute top-4 right-4 flex items-center space-x-4 z-20"> {/* 保持 z-index */}
         {/* 主题切换按钮 */}
         <button
           className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg"
@@ -283,10 +310,10 @@ function App() {
         </a>
       </div>
 
-      {/* 页面主要内容，确保在叠加层上方 */}
-      <div className="relative z-10 flex flex-col items-center w-full">
-         {/* **临时测试文本，用于确认内容区域是否渲染** */}
-         {<p className="text-white text-2xl z-30">测试文本，如果看到说明内容区域正常</p>}
+      {/* 页面主要内容 */}
+      <div className="relative z-10 flex flex-col items-center w-full"> {/* 保持 relative 和 z-10 */}
+         {/* 临时测试文本 - 保留或移除 */}
+         {/* <p className="text-white text-2xl z-30">测试文本，如果看到说明内容区域正常</p> */}
 
 
         {/* 添加时间与天气显示区域 */}
