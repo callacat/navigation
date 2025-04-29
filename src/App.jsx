@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css'; // 保留原有的 App.css 引入
+// 引入 uuid 库用于生成唯一 ID
+// 在 package.json 的 dependencies 中添加 "uuid": "^8.3.2" (或其他最新版本)
+// import { v4 as uuidv4 } from 'uuid'; // 如果在本地开发，需要安装并引入 uuid
 
 // 定义主题模式的顺序
 const themes = ['light', 'dark', 'system'];
@@ -91,6 +94,12 @@ const getFaviconUrl = (url) => {
     console.error("Invalid URL for favicon:", url, error);
     return ''; // 返回空字符串表示获取失败
   }
+};
+
+// Helper function to generate a unique ID (simplified for GitHub.dev)
+// In a real project, use a library like 'uuid'
+const generateUniqueId = () => {
+    return '_' + Math.random().toString(36).substr(2, 9);
 };
 
 
@@ -412,8 +421,10 @@ function App() {
           }));
 
           // 只有当有卡片的图标被更新时才设置状态，避免不必要的渲染
+          // 简单的深比较，如果数据结构复杂或包含函数，需要更复杂的比较或使用 Immer 等库
           if (JSON.stringify(updatedSections) !== JSON.stringify(sections)) {
                // 使用 setTimeout 延迟设置状态，给浏览器一些时间渲染，可能有助于图标加载
+               // 注意：这只是一个尝试，不保证解决所有图标加载问题
                setTimeout(() => {
                    setSections(updatedSections);
                }, 100); // 延迟 100 毫秒
@@ -436,6 +447,153 @@ function App() {
     e.target.src = ''; // 清空 src，显示备用内容（首字母）
     // 可以选择在这里设置一个默认的本地图标或者让父元素显示首字母
     // 例如：e.target.parentElement.innerText = e.target.alt.charAt(0);
+  };
+
+  // --- 分区和卡片管理相关的状态和函数 ---
+  const [showAddSectionModal, setShowAddSectionModal] = useState(false);
+  const [showEditSectionModal, setShowEditSectionModal] = useState(false);
+  const [currentSectionToEdit, setCurrentSectionToEdit] = useState(null);
+
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [showEditCardModal, setShowEditCardModal] = useState(false);
+  const [currentCardToEdit, setCurrentCardToEdit] = useState(null);
+  const [currentSectionForCard, setCurrentSectionForCard] = useState(null); // 用于添加/编辑卡片时知道是哪个分区
+
+  // 函数：打开添加分区模态框
+  const openAddSectionModal = () => {
+      setShowAddSectionModal(true);
+  };
+
+  // 函数：关闭添加分区模态框
+  const closeAddSectionModal = () => {
+      setShowAddSectionModal(false);
+  };
+
+  // 函数：添加新分区
+  const addSection = (sectionName) => {
+      if (!sectionName.trim()) return;
+      const newSection = {
+          // id: uuidv4(), // 在实际项目中使用 uuid 库生成唯一 ID
+          id: generateUniqueId(), // 简化的唯一 ID 生成
+          name: sectionName.trim(),
+          cards: [],
+      };
+      setSections([...sections, newSection]);
+      closeAddSectionModal(); // 添加成功后关闭模态框
+  };
+
+  // 函数：打开编辑分区模态框
+  const openEditSectionModal = (section) => {
+      setCurrentSectionToEdit(section);
+      setShowEditSectionModal(true);
+  };
+
+  // 函数：关闭编辑分区模态框
+  const closeEditSectionModal = () => {
+      setCurrentSectionToEdit(null);
+      setShowEditSectionModal(false);
+  };
+
+  // 函数：编辑分区
+  const editSection = (sectionId, newName) => {
+      if (!newName.trim()) return;
+      const updatedSections = sections.map(section =>
+          section.id === sectionId ? { ...section, name: newName.trim() } : section
+      );
+      setSections(updatedSections);
+      closeEditSectionModal(); // 编辑成功后关闭模态框
+  };
+
+  // 函数：删除分区
+  const deleteSection = (sectionId) => {
+      // 可以在这里添加确认提示
+      if (window.confirm("确定要删除此分区吗？")) {
+          const updatedSections = sections.filter(section => section.id !== sectionId);
+          setSections(updatedSections);
+      }
+  };
+
+  // 函数：打开添加卡片模态框
+  const openAddCardModal = (sectionId) => {
+      setCurrentSectionForCard(sectionId); // 记录是哪个分区
+      setShowAddCardModal(true);
+  };
+
+  // 函数：关闭添加卡片模态框
+  const closeAddCardModal = () => {
+      setCurrentSectionForCard(null);
+      setShowAddCardModal(false);
+  };
+
+  // 函数：添加新卡片
+  const addCard = (sectionId, cardName, cardUrl, cardIcon = '') => {
+      if (!cardName.trim() || !cardUrl.trim()) return;
+
+      // 尝试获取 favicon URL，如果手动提供了 icon 则使用手动提供的
+      const iconUrl = cardIcon.trim() || getFaviconUrl(cardUrl.trim());
+
+      const newCard = {
+          // id: uuidv4(), // 在实际项目中使用 uuid 库生成唯一 ID
+          id: generateUniqueId(), // 简化的唯一 ID 生成
+          name: cardName.trim(),
+          url: cardUrl.trim(),
+          icon: iconUrl,
+      };
+
+      const updatedSections = sections.map(section =>
+          section.id === sectionId ? { ...section, cards: [...section.cards, newCard] } : section
+      );
+      setSections(updatedSections);
+      closeAddCardModal(); // 添加成功后关闭模态框
+  };
+
+  // 函数：打开编辑卡片模态框
+  const openEditCardModal = (sectionId, card) => {
+      setCurrentSectionForCard(sectionId); // 记录是哪个分区
+      setCurrentCardToEdit(card);
+      setShowEditCardModal(true);
+  };
+
+  // 函数：关闭编辑卡片模态框
+  const closeEditCardModal = () => {
+      setCurrentSectionForCard(null);
+      setCurrentCardToEdit(null);
+      setShowEditCardModal(false);
+  };
+
+  // 函数：编辑卡片
+  const editCard = (sectionId, cardId, newName, newUrl, newIcon = '') => {
+      if (!newName.trim() || !newUrl.trim()) return;
+
+       // 尝试获取 favicon URL，如果手动提供了 icon 则使用手动提供的
+      const iconUrl = newIcon.trim() || getFaviconUrl(newUrl.trim());
+
+      const updatedSections = sections.map(section => {
+          if (section.id === sectionId) {
+              const updatedCards = section.cards.map(card =>
+                  card.id === cardId ? { ...card, name: newName.trim(), url: newUrl.trim(), icon: iconUrl } : card
+              );
+              return { ...section, cards: updatedCards };
+          }
+          return section;
+      });
+      setSections(updatedSections);
+      closeEditCardModal(); // 编辑成功后关闭模态框
+  };
+
+  // 函数：删除卡片
+  const deleteCard = (sectionId, cardId) => {
+      // 可以在这里添加确认提示
+       if (window.confirm("确定要删除此卡片吗？")) {
+          const updatedSections = sections.map(section => {
+              if (section.id === sectionId) {
+                  const updatedCards = section.cards.filter(card => card.id !== cardId);
+                  return { ...section, cards: updatedCards };
+              }
+              return section;
+          });
+          setSections(updatedSections);
+       }
   };
 
 
@@ -548,8 +706,40 @@ function App() {
         <div className="mt-8 w-full max-w-4xl"> {/* 调整最大宽度以适应多个分区 */}
           {sections.map(section => (
             <div key={section.id} className="mb-8 p-4 rounded-lg shadow-xl bg-white dark:bg-gray-800"> {/* 为分区容器添加样式，减小内边距 */}
-              {/* 分区标题 */}
-              <h2 className="text-xl font-bold mb-4 pb-2 border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">{section.name}</h2> {/* 减小标题大小和底部间距 */}
+              {/* 分区标题和管理按钮 */}
+              <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-300 dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{section.name}</h2> {/* 减小标题大小和底部间距 */}
+                  {/* 分区管理按钮 */}
+                  <div>
+                      {/* 添加卡片按钮 */}
+                      <button
+                          className="ml-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                          onClick={() => openAddCardModal(section.id)} // 点击打开添加卡片模态框
+                          title="添加卡片"
+                      >
+                          + {/* 示例图标，未来可以使用更专业的图标库 */}
+                      </button>
+                      {/* 编辑分区按钮 */}
+                      <button
+                          className="ml-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                          onClick={() => openEditSectionModal(section)} // 点击打开编辑分区模态框
+                          title="编辑分区"
+                      >
+                          ✏️ {/* 示例图标 */}
+                      </button>
+                       {/* 删除分区按钮 */}
+                       {sections.length > 1 && ( // 至少保留一个分区
+                           <button
+                               className="ml-2 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500"
+                               onClick={() => deleteSection(section.id)} // 点击删除分区
+                               title="删除分区"
+                           >
+                               🗑️ {/* 示例图标 */}
+                           </button>
+                       )}
+                  </div>
+              </div>
+
 
               {/* 卡片容器 */}
               {/* 调整 grid 列数，在小屏幕上显示更多 */}
@@ -557,7 +747,7 @@ function App() {
                 {section.cards.map(card => (
                   <button
                     key={card.id}
-                    className="flex flex-col items-center p-3 rounded-lg shadow-md bg-gray-50 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" // 改进卡片背景样式，减小内边距
+                    className="flex flex-col items-center p-3 rounded-lg shadow-md bg-gray-50 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 group relative" // 改进卡片背景样式，减小内边距，添加 group relative
                     onClick={() => handleCardClick(card.url)}
                   >
                     {/* 卡片图标或首字母 */}
@@ -571,16 +761,208 @@ function App() {
                       )}
                     </div>
                     {/* 卡片名称 */}
-                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 减小文本大小 */}
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 添加 truncate 避免名称过长溢出 */}
+
+                    {/* 卡片管理按钮 (悬停显示) */}
+                    <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {/* 编辑卡片按钮 */}
+                        <button
+                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs"
+                            onClick={(e) => { e.stopPropagation(); openEditCardModal(section.id, card); }} // 阻止事件冒泡，打开编辑卡片模态框
+                            title="编辑卡片"
+                        >
+                            ✏️
+                        </button>
+                        {/* 删除卡片按钮 */}
+                         <button
+                            className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500 text-xs"
+                            onClick={(e) => { e.stopPropagation(); deleteCard(section.id, card.id); }} // 阻止事件冒泡，删除卡片
+                            title="删除卡片"
+                        >
+                            🗑️
+                        </button>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           ))}
+           {/* 添加分区按钮 */}
+           <div className="flex justify-center mt-8">
+               <button
+                   className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                   onClick={openAddSectionModal} // 点击打开添加分区模态框
+               >
+                   + 添加新分区
+               </button>
+           </div>
         </div>
         {/* --- 分区和卡片区域结束 --- */}
 
       </div> {/* 页面主要内容容器结束 */}
+
+      {/* --- 模态框 (简化实现，实际应使用更完善的模态框组件) --- */}
+      {/* 添加分区模态框 */}
+      {showAddSectionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+                  <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">添加新分区</h3>
+                  <input
+                      type="text"
+                      placeholder="分区名称"
+                      className="w-full px-3 py-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                      id="newSectionNameInput" // 添加 ID 方便获取值
+                  />
+                  <div className="flex justify-end">
+                      <button
+                          className="mr-2 px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-700"
+                          onClick={closeAddSectionModal}
+                      >
+                          取消
+                      </button>
+                      <button
+                          className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800"
+                          onClick={() => {
+                              const input = document.getElementById('newSectionNameInput');
+                              if (input) addSection(input.value);
+                          }}
+                      >
+                          添加
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* 编辑分区模态框 */}
+      {showEditSectionModal && currentSectionToEdit && (
+           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+                   <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">编辑分区</h3>
+                   <input
+                       type="text"
+                       defaultValue={currentSectionToEdit.name} // 显示当前名称
+                       placeholder="分区名称"
+                       className="w-full px-3 py-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                       id="editSectionNameInput" // 添加 ID 方便获取值
+                   />
+                   <div className="flex justify-end">
+                       <button
+                           className="mr-2 px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-700"
+                           onClick={closeEditSectionModal}
+                       >
+                           取消
+                       </button>
+                       <button
+                           className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800"
+                           onClick={() => {
+                               const input = document.getElementById('editSectionNameInput');
+                               if (input) editSection(currentSectionToEdit.id, input.value);
+                           }}
+                       >
+                           保存
+                       </button>
+                   </div>
+               </div>
+           </div>
+       )}
+
+       {/* 添加卡片模态框 */}
+       {showAddCardModal && currentSectionForCard && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">添加新卡片到 "{sections.find(s => s.id === currentSectionForCard)?.name || '该分区'}"</h3>
+                    <input
+                        type="text"
+                        placeholder="网站名称"
+                        className="w-full px-3 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                        id="newCardNameInput"
+                    />
+                    <input
+                        type="text"
+                        placeholder="网站 URL (例如: https://www.google.com)"
+                        className="w-full px-3 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                        id="newCardUrlInput"
+                    />
+                    <input
+                         type="text"
+                         placeholder="图标 URL (可选，留空则自动获取)"
+                         className="w-full px-3 py-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                         id="newCardIconInput"
+                     />
+                    <div className="flex justify-end">
+                        <button
+                            className="mr-2 px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-700"
+                            onClick={closeAddCardModal}
+                        >
+                            取消
+                        </button>
+                        <button
+                            className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800"
+                            onClick={() => {
+                                const nameInput = document.getElementById('newCardNameInput');
+                                const urlInput = document.getElementById('newCardUrlInput');
+                                const iconInput = document.getElementById('newCardIconInput');
+                                if (nameInput && urlInput) addCard(currentSectionForCard, nameInput.value, urlInput.value, iconInput?.value || '');
+                            }}
+                        >
+                            添加
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* 编辑卡片模态框 */}
+        {showEditCardModal && currentCardToEdit && currentSectionForCard && (
+             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+                     <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">编辑卡片 "{currentCardToEdit.name}"</h3>
+                     <input
+                         type="text"
+                         defaultValue={currentCardToEdit.name}
+                         placeholder="网站名称"
+                         className="w-full px-3 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                         id="editCardNameInput"
+                     />
+                     <input
+                         type="text"
+                         defaultValue={currentCardToEdit.url}
+                         placeholder="网站 URL (例如: https://www.google.com)"
+                         className="w-full px-3 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                         id="editCardUrlInput"
+                     />
+                      <input
+                          type="text"
+                          defaultValue={currentCardToEdit.icon}
+                          placeholder="图标 URL (可选，留空则自动获取)"
+                          className="w-full px-3 py-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600"
+                          id="editCardIconInput"
+                      />
+                     <div className="flex justify-end">
+                         <button
+                             className="mr-2 px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-700"
+                             onClick={closeEditCardModal}
+                         >
+                             取消
+                         </button>
+                         <button
+                             className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-800"
+                             onClick={() => {
+                                 const nameInput = document.getElementById('editCardNameInput');
+                                 const urlInput = document.getElementById('editCardUrlInput');
+                                 const iconInput = document.getElementById('editCardIconInput');
+                                 if (nameInput && urlInput) editCard(currentSectionForCard, currentCardToEdit.id, nameInput.value, urlInput.value, iconInput?.value || '');
+                             }}
+                         >
+                             保存
+                         </button>
+                     </div>
+                 </div>
+             </div>
+         )}
+
+      {/* --- 模态框结束 --- */}
 
     </div> // 主容器结束
   );
