@@ -2,4 +2,17 @@
 .App {
     text-align: center;
   }
+@keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px); /* 可选：添加一个轻微的向上移动效果 */
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
   
+  .animate-fade-in {
+    animation: fade-in 0.8s ease-out forwards; /* 动画名称、持续时间、缓动函数、结束后保持状态 */
+  }

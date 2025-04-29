@@ -637,7 +637,8 @@ function App() {
       </div>
 
       {/* 页面主要内容 */}
-      <div className="relative z-10 flex flex-col items-center w-full"> {/* 保持 relative 和 z-10 */}
+      {/* 添加 fade-in 动画类 */}
+      <div className="relative z-10 flex flex-col items-center w-full animate-fade-in"> {/* 保持 relative 和 z-10 */}
          {/* 临时测试文本 - 保留或移除 */}
          {/* <p className="text-white text-2xl z-30">测试文本，如果看到说明内容区域正常</p> */}
 
@@ -711,9 +712,9 @@ function App() {
                   <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{section.name}</h2> {/* 减小标题大小和底部间距 */}
                   {/* 分区管理按钮 */}
                   <div>
-                      {/* 添加卡片按钮 */}
+                      {/* 添加卡片按钮 - 调整大小 */}
                       <button
-                          className="ml-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                          className="ml-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-xl" // **调整文本大小**
                           onClick={() => openAddCardModal(section.id)} // 点击打开添加卡片模态框
                           title="添加卡片"
                       >
@@ -761,7 +762,7 @@ function App() {
                       )}
                     </div>
                     {/* 卡片名称 */}
-                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 添加 truncate 避免名称过长溢出 */}
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 text-center truncate w-full">{card.name}</span> {/* 减小文本大小 */}
 
                     {/* 卡片管理按钮 (悬停显示) */}
                     <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
