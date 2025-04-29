@@ -25,7 +25,6 @@ const getBeijingTime = () => {
   const day = String(beijingTime.getDate()).padStart(2, '0');
   const hours = String(beijingTime.getHours()).padStart(2, '0');
   const minutes = String(beijingTime.getMinutes()).padStart(2, '0');
-  // const seconds = String(beijingTime.getSeconds()).padStart(2, '0'); // 移除秒钟
   const dayOfWeek = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][beijingTime.getDay()]; // 获取星期
 
   return `${year}-${month}-${day} ${hours}:${minutes} ${dayOfWeek}`; // 移除秒钟部分
@@ -33,11 +32,11 @@ const getBeijingTime = () => {
 
 // 直接在这里设置你的天气 API Key
 // 请替换 'YOUR_HEFENG_API_KEY' 为你的和风天气 API Key
+// **注意：和风天气 V7 版本 Key 需要放在 Authorization: Bearer 头部**
 const WEATHER_API_KEY = 'YOUR_HEFENG_API_KEY'; // <-- 在这里填写你的 API Key
 
-// 和风天气 API 基础 URL (以获取实时天气为例)
-// 请参考和风天气开发文档 (https://dev.qweather.com/) 获取具体接口和参数
-const WEATHER_BASE_URL = 'https://devapi.qweather.com/v7/weather/now';
+// 和风天气 V7 实时天气 API 基础 URL
+const WEATHER_BASE_URL = 'https://n463ytfng8.re.qweatherapi.com/v7/weather/now';
 
 
 function App() {
@@ -130,13 +129,17 @@ function App() {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          // 和风天气通常需要 Location ID 或 经纬度 (用逗号分隔)
-          const locationCoord = `${longitude},${latitude}`; // 和风天气经纬度格式是经度,纬度
+          // 和风天气实时天气接口使用经纬度作为 location 参数，格式为 经度,纬度
+          const locationCoord = `${longitude},${latitude}`; // **修改这里，使用经度,纬度**
 
           try {
             // 调用和风天气 API 获取天气信息
-            // 注意：这里的参数和响应结构是基于和风天气开发文档的示例，实际可能需要根据你申请的接口进行调整
-            const response = await fetch(`${WEATHER_BASE_URL}?location=${locationCoord}&key=${WEATHER_API_KEY}&lang=zh`); // lang=zh 获取中文描述
+            // 使用 Headers 将 API Key 放在 Authorization: Bearer 头部
+            const response = await fetch(`${WEATHER_BASE_URL}?location=${locationCoord}&lang=zh`, { // **移除 ?key=... 参数**
+              headers: { // **添加 Headers**
+                'Authorization': `Bearer ${WEATHER_API_KEY}` // **使用 Authorization: Bearer 头部**
+              }
+            });
             if (!response.ok) {
                // 尝试解析错误信息
                const errorData = await response.json();
@@ -147,8 +150,11 @@ function App() {
             // 检查 API 返回的状态码
             if (data.code === '200') {
                 setWeather(data.now); // 实时天气数据通常在 'now' 字段
-                // 如果API返回位置信息，可以一并设置
-                // setLocationInfo(data.location[0]); // 示例：如果API返回location列表
+                // 获取位置信息 (可能在 data.location 字段，取决于你使用的接口和参数)
+                // 注意：实时天气接口本身可能不返回详细位置信息，可能需要调用另外的地理/位置查找接口
+                // 这里先尝试从响应中获取城市名，如果API不返回，可以留空或显示经纬度
+                setLocationInfo(data.location ? data.location[0] : null); // 假设位置信息在 data.location 数组的第一个元素
+
                 setWeatherError(null); // 清除之前的错误
             } else {
                 // API 返回错误码
@@ -233,10 +239,9 @@ function App() {
             <p>{weatherError}</p>
           ) : weather ? (
             <p>
-              {/* 和风天气实时天气示例：城市名可能需要另外获取或通过API返回 */}
-              {/* 这里假设API返回了位置信息或者你可以通过其他方式获取城市名 */}
-              {/* 如果API响应中包含城市名，可以这样显示：{locationInfo?.name || '您的位置'}: */}
-              天气: {weather.temp}°C, {weather.text} {/* 假设实时天气温度在 temp 字段，描述在 text 字段 */}
+              {/* 显示城市名（如果获取到）和天气信息 */}
+              {locationInfo?.name ? `${locationInfo.name}: ` : '您的位置: '}
+              {weather.temp}°C, {weather.text} {/* 假设实时天气温度在 temp 字段，描述在 text 字段 */}
             </p>
           ) : (
             <p>正在获取天气...</p>
