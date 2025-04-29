@@ -54,7 +54,6 @@ const defaultSearchEngines = [
 // const BING_DAILY_IMAGE_API_URL = 'https://www.bing.com/HPImageArchive.aspx?format=json&idx=0&n=1&mkt=zh-CN';
 // idx=0 表示获取当天的图片，n=1 表示获取一张图片，mkt=zh-CN 表示中国区
 
-
 // --- 定义分区和卡片的数据结构 ---
 // 示例数据结构，实际数据可以从 localStorage 加载
 const defaultSections = [
@@ -65,6 +64,8 @@ const defaultSections = [
       { id: 'card-1-1', name: 'Google', url: 'https://www.google.com', icon: '' }, // icon 字段用于存储图标 URL 或首字母
       { id: 'card-1-2', name: 'GitHub', url: 'https://github.com', icon: '' },
       { id: 'card-1-3', name: '知乎', url: 'https://www.zhihu.com', icon: '' },
+      { id: 'card-1-4', name: 'Bilibili', url: 'https://www.bilibili.com', icon: '' },
+      { id: 'card-1-5', name: '百度翻译', url: 'https://fanyi.baidu.com/', icon: '' },
     ],
   },
   {
@@ -73,10 +74,24 @@ const defaultSections = [
     cards: [
       { id: 'card-2-1', name: 'MDN', url: 'https://developer.mozilla.org/', icon: '' },
       { id: 'card-2-2', name: 'Stack Overflow', url: 'https://stackoverflow.com/', icon: '' },
+      { id: 'card-2-3', name: 'Vite', url: 'https://vitejs.dev/', icon: '' },
+      { id: 'card-2-4', name: 'React', url: 'https://react.dev/', icon: '' },
+      { id: 'card-2-5', name: 'Tailwind CSS', url: 'https://tailwindcss.com/', icon: '' },
     ],
   },
   // 可以添加更多分区
 ];
+
+// 函数：使用 Google Favicon 服务获取网站图标 URL
+const getFaviconUrl = (url) => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}`;
+  } catch (error) {
+    console.error("Invalid URL for favicon:", url, error);
+    return ''; // 返回空字符串表示获取失败
+  }
+};
 
 
 function App() {
@@ -297,6 +312,35 @@ function App() {
   // --- 分区和卡片相关的状态 ---
   const [sections, setSections] = useState(defaultSections); // 使用示例数据初始化分区状态
 
+  // 使用 useEffect 在组件挂载后获取网站图标
+  useEffect(() => {
+    const fetchFavicons = async () => {
+      const updatedSections = sections.map(section => ({
+        ...section,
+        cards: section.cards.map(card => {
+          // 如果卡片已经有 icon URL，则跳过获取
+          if (card.icon) {
+            return card;
+          }
+          // 否则，获取 favicon URL
+          const faviconUrl = getFaviconUrl(card.url);
+          // 这里直接返回带有 faviconUrl 的新卡片对象
+          // 注意：Google Favicon 服务可能无法获取所有网站的图标
+          return { ...card, icon: faviconUrl };
+        })
+      }));
+      setSections(updatedSections);
+    };
+
+    // 仅在 sections 状态初始化时运行一次此 effect
+    // 如果 sections 数据会动态变化并需要重新获取图标，需要调整依赖项
+    if (sections === defaultSections) {
+       fetchFavicons();
+    }
+
+  }, [sections]); // 依赖 sections，确保在 sections 变化时（例如加载本地存储数据后）也能获取图标
+
+
   // 处理卡片点击的函数
   const handleCardClick = (url) => {
     window.open(url, '_blank'); // 在新标签页打开网址
@@ -372,12 +416,13 @@ function App() {
 
         {/* --- 搜索区 --- */}
         <div className="mt-12 w-full max-w-md">
-          <form onSubmit={handleSearch} className="flex items-center rounded-full shadow-md overflow-hidden bg-white dark:bg-gray-800">
+          {/* 调整搜索表单的 flex 行为，确保按钮可见 */}
+          <form onSubmit={handleSearch} className="flex items-center rounded-full shadow-md overflow-hidden bg-white dark:bg-gray-800"> {/* 移除 flex-nowrap，让其在小屏幕上可换行 */}
             {/* 搜索引擎选择 */}
             <select
               value={selectedEngine.name}
               onChange={handleEngineChange}
-              className="px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 border-none focus:outline-none"
+              className="px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 border-none focus:outline-none flex-shrink-0" // 添加 flex-shrink-0
             >
               {defaultSearchEngines.map(engine => (
                 <option key={engine.name} value={engine.name}>
@@ -392,13 +437,13 @@ function App() {
               value={searchQuery}
               onChange={handleSearchInputChange}
               placeholder="输入搜索内容..."
-              className="flex-grow px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 border-none focus:outline-none"
+              className="flex-grow px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 border-none focus:outline-none min-w-0" // 添加 min-w-0 允许输入框缩小
             />
 
             {/* 搜索按钮 */}
             <button
               type="submit"
-              className="px-6 py-3 bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100 hover:bg-blue-600 dark:hover:bg-blue-800 focus:outline-none"
+              className="px-6 py-3 bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100 hover:bg-blue-600 dark:hover:bg-blue-800 focus:outline-none flex-shrink-0" // 添加 flex-shrink-0
             >
               搜索
             </button>
@@ -419,14 +464,14 @@ function App() {
                 {section.cards.map(card => (
                   <button
                     key={card.id}
-                    className="flex flex-col items-center p-4 rounded-lg shadow-md bg-gray-200 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" // 改进卡片样式和交互效果
+                    className="flex flex-col items-center p-4 rounded-lg shadow-md bg-gray-50 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" // 改进卡片背景样式
                     onClick={() => handleCardClick(card.url)}
                   >
                     {/* 卡片图标或首字母 */}
                     <div className="w-10 h-10 mb-2 flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white rounded-full text-xl font-bold overflow-hidden"> {/* 调整图标背景色和溢出隐藏 */}
-                      {/* 这里将实现图标获取逻辑，暂时使用首字母 */}
+                      {/* 根据 card.icon 是否存在来显示图标或首字母 */}
                       {card.icon ? (
-                        <img src={card.icon} alt={card.name} className="w-full h-full object-cover rounded-full" />
+                        <img src={card.icon} alt={card.name} className="w-full h-full object-cover rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = ''; }} /> {/* 添加 onError 处理图标加载失败 */}
                       ) : (
                         card.name.charAt(0)
                       )}
