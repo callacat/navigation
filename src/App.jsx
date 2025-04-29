@@ -282,8 +282,50 @@ function App() {
   const currentThemeInfo = themeIcons[theme];
 
   // --- 搜索区相关的状态和函数 ---
+  // 从 localStorage 加载或使用默认搜索引擎
+  const [searchEngines, setSearchEngines] = useState(() => {
+    const savedEngines = localStorage.getItem('searchEngines');
+    try {
+      return savedEngines ? JSON.parse(savedEngines) : defaultSearchEngines;
+    } catch (error) {
+      console.error("Failed to parse search engines from localStorage:", error);
+      return defaultSearchEngines; // 解析失败时使用默认值
+    }
+  });
+
   const [searchQuery, setSearchQuery] = useState(''); // 搜索输入框的状态
-  const [selectedEngine, setSelectedEngine] = useState(defaultSearchEngines[0]); // 当前选中的搜索引擎
+  // 从 localStorage 加载或使用默认选中的搜索引擎
+  const [selectedEngine, setSelectedEngine] = useState(() => {
+    const savedSelectedEngineName = localStorage.getItem('selectedSearchEngine');
+    if (savedSelectedEngineName) {
+      const engine = searchEngines.find(engine => engine.name === savedSelectedEngineName);
+      if (engine) {
+        return engine;
+      }
+    }
+    return searchEngines[0]; // 默认选中第一个
+  });
+
+
+  // 使用 useEffect 将 searchEngines 保存到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('searchEngines', JSON.stringify(searchEngines));
+    } catch (error) {
+      console.error("Failed to save search engines to localStorage:", error);
+      // 可以添加用户提示，例如：alert("保存搜索引擎配置失败，localStorage 已满或不可用。");
+    }
+  }, [searchEngines]); // 当 searchEngines 变化时保存
+
+  // 使用 useEffect 将 selectedEngine 保存到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('selectedSearchEngine', selectedEngine.name);
+    } catch (error) {
+      console.error("Failed to save selected search engine to localStorage:", error);
+    }
+  }, [selectedEngine]); // 当 selectedEngine 变化时保存
+
 
   // 处理搜索输入的函数
   const handleSearchInputChange = (event) => {
@@ -293,7 +335,7 @@ function App() {
   // 处理搜索引擎选择变化的函数
   const handleEngineChange = (event) => {
     const selectedEngineName = event.target.value;
-    const engine = defaultSearchEngines.find(engine => engine.name === selectedEngineName);
+    const engine = searchEngines.find(engine => engine.name === selectedEngineName);
     if (engine) {
       setSelectedEngine(engine);
     }
@@ -310,40 +352,77 @@ function App() {
   // --- 搜索区相关的状态和函数结束 ---
 
   // --- 分区和卡片相关的状态 ---
-  const [sections, setSections] = useState(defaultSections); // 使用示例数据初始化分区状态
+  // 从 localStorage 加载或使用默认分区和卡片
+  const [sections, setSections] = useState(() => {
+    const savedSections = localStorage.getItem('sections');
+    try {
+      // 在加载时尝试获取图标，但可能需要延迟或在单独的 effect 中处理
+      const loadedSections = savedSections ? JSON.parse(savedSections) : defaultSections;
+       // 在加载时也尝试获取图标，但可能需要更健壮的逻辑
+       const sectionsWithFavicons = loadedSections.map(section => ({
+           ...section,
+           cards: section.cards.map(card => {
+               // 如果加载的数据中已经有图标，则使用
+               if (card.icon) {
+                   return card;
+               }
+               // 否则尝试获取
+               const faviconUrl = getFaviconUrl(card.url);
+               return { ...card, icon: faviconUrl };
+           })
+       }));
+       return sectionsWithFavicons;
 
-  // 使用 useEffect 在组件挂载后获取网站图标
-  useEffect(() => {
-    const fetchFavicons = async () => {
-      const updatedSections = sections.map(section => ({
-        ...section,
-        cards: section.cards.map(card => {
-          // 如果卡片已经有 icon URL，则跳过获取
-          if (card.icon) {
-            return card;
-          }
-          // 否则，获取 favicon URL
-          const faviconUrl = getFaviconUrl(card.url);
-          // 这里直接返回带有 faviconUrl 的新卡片对象
-          // 注意：Google Favicon 服务可能无法获取所有网站的图标
-          return { ...card, icon: faviconUrl };
-        })
-      }));
-      // 使用 setTimeout 延迟设置状态，给浏览器一些时间渲染，可能有助于图标加载
-      // 注意：这只是一个尝试，不保证解决所有图标加载问题
-      setTimeout(() => {
-          setSections(updatedSections);
-      }, 100); // 延迟 100 毫秒
-    };
-
-    // 仅在 sections 状态初始化时运行一次此 effect
-    // 检查 sections 是否是初始的 defaultSections 引用，避免重复获取
-    // 使用 JSON.stringify 比较深层内容，更准确判断是否是初始数据
-    if (JSON.stringify(sections) === JSON.stringify(defaultSections)) {
-       fetchFavicons();
+    } catch (error) {
+      console.error("Failed to parse sections from localStorage:", error);
+      return defaultSections; // 解析失败时使用默认值
     }
+  });
 
-  }, [sections]); // 依赖 sections，确保在 sections 变化时（例如加载本地存储数据后）也能获取图标
+
+  // 使用 useEffect 将 sections 保存到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sections', JSON.stringify(sections));
+    } catch (error) {
+      console.error("Failed to save sections to localStorage:", error);
+      // 可以添加用户提示
+    }
+  }, [sections]); // 当 sections 变化时保存
+
+
+  // 使用 useEffect 在组件挂载后获取网站图标 (如果加载的数据中没有)
+  // 这个 effect 现在主要用于处理初始加载 defaultSections 时获取图标，
+  // 或者当 sections 状态因其他原因（非加载自 localStorage）变化时。
+  // 注意：如果 sections 是从 localStorage 加载的，并且加载时已经尝试获取了图标，
+  // 这个 effect 可能会因为 sections === defaultSections 条件不满足而跳过。
+  // 如果需要确保每次更新 sections 后都检查并获取图标，需要调整逻辑。
+  useEffect(() => {
+      const fetchFaviconsForNewCards = async () => {
+          const updatedSections = sections.map(section => ({
+              ...section,
+              cards: section.cards.map(card => {
+                  // 如果卡片没有图标且有 URL，则尝试获取
+                  if (!card.icon && card.url) {
+                      const faviconUrl = getFaviconUrl(card.url);
+                      return { ...card, icon: faviconUrl };
+                  }
+                  return card; // 否则返回原卡片
+              })
+          }));
+
+          // 只有当有卡片的图标被更新时才设置状态，避免不必要的渲染
+          if (JSON.stringify(updatedSections) !== JSON.stringify(sections)) {
+               // 使用 setTimeout 延迟设置状态，给浏览器一些时间渲染，可能有助于图标加载
+               setTimeout(() => {
+                   setSections(updatedSections);
+               }, 100); // 延迟 100 毫秒
+          }
+      };
+
+      fetchFaviconsForNewCards();
+
+  }, [sections]); // 依赖 sections，确保在 sections 变化时检查新卡片
 
 
   // 处理卡片点击的函数
@@ -437,7 +516,7 @@ function App() {
               onChange={handleEngineChange}
               className="px-4 py-3 bg-transparent text-gray-800 dark:text-gray-200 border-none focus:outline-none flex-shrink-0" // 添加 flex-shrink-0
             >
-              {defaultSearchEngines.map(engine => (
+              {searchEngines.map(engine => ( // 使用 searchEngines 状态
                 <option key={engine.name} value={engine.name}>
                   {engine.name}
                 </option>
