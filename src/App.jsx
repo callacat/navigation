@@ -120,7 +120,7 @@ function App() {
   // 使用 useEffect 获取用户位置并获取天气
   useEffect(() => {
     // 检查 API Key 是否已设置（是否还是默认的占位符）
-    if (!WEATHER_API_KEY || WEATHER_API_KEY === 'YOUR_HEFENG_API_KEY') {
+    if (!WEATHER_API_KEY || WEATHER_API_KEY === '29cff348b2dc441bbe48bdd1f6790ed5') {
       setWeatherError("请在 src/App.jsx 文件中设置您的天气 API Key"); // <-- 更新提示信息
       return;
     }
