@@ -334,6 +334,7 @@ function App() {
 
     // 仅在 sections 状态初始化时运行一次此 effect
     // 如果 sections 数据会动态变化并需要重新获取图标，需要调整依赖项
+    // 检查 sections 是否是初始的 defaultSections 引用，避免重复获取
     if (sections === defaultSections) {
        fetchFavicons();
     }
@@ -346,13 +347,19 @@ function App() {
     window.open(url, '_blank'); // 在新标签页打开网址
   };
 
+  // 定义图片加载失败的处理函数
+  const handleImageError = (e) => {
+    e.target.onerror = null; // 防止无限循环
+    e.target.src = ''; // 清空 src，显示备用内容（首字母）
+  };
+
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
     // 移除背景图片样式和叠加层
     <div
       className="min-h-screen relative flex flex-col items-center p-4 bg-gray-100 dark:bg-gray-900" // 保留 fallback 背景颜色
-      // style={{ // 移除 style 属性
+      // style={{ // 移除 style属性
       //   backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
       //   backgroundSize: 'cover',
       //   backgroundPosition: 'center',
@@ -363,7 +370,7 @@ function App() {
       {/* <div className="absolute inset-0 bg-black opacity-30 dark:bg-black dark:opacity-60 z-0"></div> */}
 
 
-      {/* 右上角区域，确保在前景 */}
+      {/* 右上角区域, 确保在前景 */}
       <div className="absolute top-4 right-4 flex items-center space-x-4 z-20"> {/* 保持 z-index */}
         {/* 主题切换按钮 */}
         <button
@@ -374,7 +381,7 @@ function App() {
           {currentThemeInfo.icon}
         </button>
 
-        {/* GitHub 链接，请替换为你的 GitHub 仓库地址 */}
+        {/* GitHub 链接, 请替换为你的 GitHub 仓库地址 */}
         <a
           href="YOUR_GITHUB_REPO_URL" // *** 请将 YOUR_GITHUB_REPO_URL 替换为你的 GitHub 仓库地址 ***
           target="_blank"
@@ -471,7 +478,8 @@ function App() {
                     <div className="w-10 h-10 mb-2 flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white rounded-full text-xl font-bold overflow-hidden"> {/* 调整图标背景色和溢出隐藏 */}
                       {/* 根据 card.icon 是否存在来显示图标或首字母 */}
                       {card.icon ? (
-                        <img src={card.icon} alt={card.name} className="w-full h-full object-cover rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = ''; }} /> {/* 添加 onError 处理图标加载失败 */}
+                        // 使用定义的 handleImageError 函数
+                        <img src={card.icon} alt={card.name} className="w-full h-full object-cover rounded-full" onError={handleImageError} />
                       ) : (
                         card.name.charAt(0)
                       )}
