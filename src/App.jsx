@@ -42,7 +42,7 @@ const WEATHER_BASE_URL = 'https://devapi.qweather.com/v7/weather/now';
 const defaultSearchEngines = [
   { name: 'Google', url: 'https://www.google.com/search?q=' },
   { name: 'Bing', url: 'https://www.bing.com/search?q=' },
-  { name: '秘塔AI搜索', url: 'https://metaso.cn/search?q=' },
+  // { name: '秘塔AI搜索', url: 'https://metaso.cn/search?q=' }, // 移除秘塔AI搜索
   { name: '知乎', url: 'https://www.zhihu.com/search?q=' },
   { name: 'Bilibili', url: 'https://search.bilibili.com/all?keyword=' },
   { name: '在线翻译', url: 'https://fanyi.baidu.com/#en/zh/' }, // 示例：百度翻译，可能需要调整URL格式
@@ -62,7 +62,7 @@ function App() {
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
-    return 'light';
+      return 'light';
   });
 
   // 定义时间状态
