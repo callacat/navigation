@@ -286,7 +286,7 @@ function App() {
       {/* 页面主要内容，确保在叠加层上方 */}
       <div className="relative z-10 flex flex-col items-center w-full">
          {/* **临时测试文本，用于确认内容区域是否渲染** */}
-         {/* <p className="text-white text-2xl z-30">测试文本，如果看到说明内容区域正常</p> */}
+         {<p className="text-white text-2xl z-30">测试文本，如果看到说明内容区域正常</p>}
 
 
         {/* 添加时间与天气显示区域 */}
