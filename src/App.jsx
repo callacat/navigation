@@ -55,6 +55,30 @@ const defaultSearchEngines = [
 // idx=0 表示获取当天的图片，n=1 表示获取一张图片，mkt=zh-CN 表示中国区
 
 
+// --- 定义分区和卡片的数据结构 ---
+// 示例数据结构，实际数据可以从 localStorage 加载
+const defaultSections = [
+  {
+    id: 'section-1',
+    name: '常用网站',
+    cards: [
+      { id: 'card-1-1', name: 'Google', url: 'https://www.google.com', icon: '' }, // icon 字段用于存储图标 URL 或首字母
+      { id: 'card-1-2', name: 'GitHub', url: 'https://github.com', icon: '' },
+      { id: 'card-1-3', name: '知乎', url: 'https://www.zhihu.com', icon: '' },
+    ],
+  },
+  {
+    id: 'section-2',
+    name: '开发工具',
+    cards: [
+      { id: 'card-2-1', name: 'MDN', url: 'https://developer.mozilla.org/', icon: '' },
+      { id: 'card-2-2', name: 'Stack Overflow', url: 'https://stackoverflow.com/', icon: '' },
+    ],
+  },
+  // 可以添加更多分区
+];
+
+
 function App() {
   // ... (主题、时间和天气相关的状态和 useEffect 保持不变) ...
   // 定义主题状态，初始值从 localStorage 读取或默认为 'system'
@@ -270,6 +294,14 @@ function App() {
   };
   // --- 搜索区相关的状态和函数结束 ---
 
+  // --- 分区和卡片相关的状态 ---
+  const [sections, setSections] = useState(defaultSections); // 使用示例数据初始化分区状态
+
+  // 处理卡片点击的函数
+  const handleCardClick = (url) => {
+    window.open(url, '_blank'); // 在新标签页打开网址
+  };
+
 
   return (
     // 使用 flexbox 布局，将内容垂直居中，并将右上角元素靠右对齐
@@ -375,10 +407,39 @@ function App() {
         {/* --- 搜索区结束 --- */}
 
 
-        <div className="flex flex-col items-center mt-8">
-           {/* 后续其他组件和内容将放在这里 */}
-           {/* 例如：分区和卡片 */}
+        {/* --- 分区和卡片区域 --- */}
+        <div className="mt-8 w-full max-w-4xl"> {/* 调整最大宽度以适应多个分区 */}
+          {sections.map(section => (
+            <div key={section.id} className="mb-8"> {/* 每个分区一个容器 */}
+              {/* 分区标题 */}
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{section.name}</h2>
+
+              {/* 卡片容器 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"> {/* 使用 grid 布局卡片 */}
+                {section.cards.map(card => (
+                  <button
+                    key={card.id}
+                    className="flex flex-col items-center p-4 rounded-lg shadow-md bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow duration-200"
+                    onClick={() => handleCardClick(card.url)}
+                  >
+                    {/* 卡片图标或首字母 */}
+                    <div className="w-10 h-10 mb-2 flex items-center justify-center bg-blue-500 dark:bg-blue-700 text-white dark:text-gray-100 rounded-full text-xl font-bold">
+                      {/* 这里将实现图标获取逻辑，暂时使用首字母 */}
+                      {card.icon ? (
+                        <img src={card.icon} alt={card.name} className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        card.name.charAt(0)
+                      )}
+                    </div>
+                    {/* 卡片名称 */}
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 text-center">{card.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
+        {/* --- 分区和卡片区域结束 --- */}
 
       </div> {/* 页面主要内容容器结束 */}
 
